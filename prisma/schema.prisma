@@ -20,10 +20,11 @@ enum PanelStatus {
 
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  username      String    @unique
+  email         String?   @unique
   emailVerified DateTime?
   name          String?
-  password      String?
+  pin           String?
   role          Role      @default(QC_INSPECTOR)
   image         String?
   accounts      Account[]
