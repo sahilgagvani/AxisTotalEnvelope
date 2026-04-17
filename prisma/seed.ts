@@ -40,9 +40,22 @@ const panelsData: {
 ]
 
 async function main() {
-  // ─── 1. Users ──────────────────────────────────────────────────────────────
-  const seededUsernames: string[] = []
+  // ─── 0. Wipe all data in FK-safe order ────────────────────────────────────
+  console.log('🧹 Clearing database...')
+  await prisma.photo.deleteMany()
+  await prisma.auditLog.deleteMany()
+  await prisma.inspectionRecord.deleteMany()
+  await prisma.projectAssignment.deleteMany()
+  await prisma.panel.deleteMany()
+  await prisma.inspectionStep.deleteMany()
+  await prisma.project.deleteMany()
+  // Only delete users not in the seed list (preserve login credentials between runs)
+  await prisma.user.deleteMany({
+    where: { username: { notIn: users.map(u => u.username) } },
+  })
+  console.log('✅ Database cleared')
 
+  // ─── 1. Users ──────────────────────────────────────────────────────────────
   for (const user of users) {
     const hashed = await bcrypt.hash(user.pin, 10)
     await prisma.user.upsert({
@@ -50,62 +63,34 @@ async function main() {
       update: { name: user.name, pin: hashed, role: user.role },
       create: { username: user.username, name: user.name, pin: hashed, role: user.role },
     })
-    seededUsernames.push(user.username)
     console.log(`✅ Upserted user: ${user.username} (${user.role})`)
   }
 
-  // Remove any users in the DB that are no longer in the list above
-  const { count: removedUsers } = await prisma.user.deleteMany({
-    where: { username: { notIn: seededUsernames } },
-  })
-  if (removedUsers > 0) console.log(`🗑️  Removed ${removedUsers} user(s) no longer in seed list`)
-
   // ─── 2. Project ────────────────────────────────────────────────────────────
-  const projectName = '18 Louisa – Burmont Construction'
-  const project = await prisma.project.upsert({
-    where:  { name: projectName },
-    update: {
-      description: 'EIFS prefabricated wall panels – Phase 1 shop manufacturing',
-      clientName:  'Burmont Construction',
-      address:     '18 Louisa Street, Ottawa, ON',
-    },
-    create: {
-      name:        projectName,
+  const project = await prisma.project.create({
+    data: {
+      name:        '18 Louisa – Burmont Construction',
       description: 'EIFS prefabricated wall panels – Phase 1 shop manufacturing',
       clientName:  'Burmont Construction',
       address:     '18 Louisa Street, Ottawa, ON',
     },
   })
-  console.log(`✅ Upserted project: "${project.name}" (${project.id})`)
+  console.log(`✅ Created project: "${project.name}" (${project.id})`)
 
   // ─── 3. Panels ─────────────────────────────────────────────────────────────
-  // Delete existing panels for this project and recreate fresh
-  const { count: deletedPanels } = await prisma.panel.deleteMany({
-    where: { projectId: project.id },
-  })
-  if (deletedPanels > 0) console.log(`🗑️  Removed ${deletedPanels} existing panel(s) for project`)
-
   for (const panel of panelsData) {
-    await prisma.panel.create({
-      data: { ...panel, projectId: project.id },
-    })
+    await prisma.panel.create({ data: { ...panel, projectId: project.id } })
     console.log(`✅ Created panel: ${panel.panelIdentifier} (${panel.assemblyType})`)
   }
 
   // ─── 4. Project Assignment ─────────────────────────────────────────────────
   const inspector = await prisma.user.findUniqueOrThrow({ where: { username: 'inspector' } })
-  await prisma.projectAssignment.upsert({
-    where:  { userId_projectId: { userId: inspector.id, projectId: project.id } },
-    update: {},
-    create: { userId: inspector.id, projectId: project.id },
+  await prisma.projectAssignment.create({
+    data: { userId: inspector.id, projectId: project.id },
   })
   console.log(`✅ Assigned inspector "${inspector.username}" to project "${project.name}"`)
 
   // ─── 5. Inspection Steps ───────────────────────────────────────────────────
-  // Delete all existing steps and recreate fresh to ensure correct order/names
-  const { count: deletedSteps } = await prisma.inspectionStep.deleteMany({})
-  if (deletedSteps > 0) console.log(`🗑️  Removed ${deletedSteps} existing inspection step(s)`)
-
   for (const step of inspectionSteps) {
     await prisma.inspectionStep.create({ data: step })
     console.log(`✅ Created inspection step ${step.stepOrder}: "${step.name}"`)
