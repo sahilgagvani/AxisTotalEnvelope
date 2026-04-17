@@ -1,46 +1,82 @@
-import { auth } from "@/auth";
-import { signOut } from "@/auth";
+import type { Metadata } from "next"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
+import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Projects — AXIS Total Envelope",
+}
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await auth()
+  const userId = session?.user?.id
+  const role = session?.user?.role
+  const isAdmin = role === "ADMIN"
+
+  const projects = await prisma.project.findMany({
+    where: isAdmin ? undefined : { assignments: { some: { userId } } },
+    include: {
+      panels: { select: { status: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  })
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <span className="text-lg font-semibold text-gray-900">
-            Axis Total Envelope
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              {session?.user?.name ?? session?.user?.email}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-              {session?.user?.role}
-            </span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button
-                type="submit"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Sign out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+    <main className="flex-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-xl font-bold text-gray-900 mb-5">
+          {isAdmin ? "Projects" : "Your Projects"}
+        </h1>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Dashboard</h1>
-        <p className="text-gray-500">
-          Welcome back. Projects and panels will appear here.
-        </p>
+        {projects.length === 0 ? (
+          <p className="text-gray-500 text-sm">
+            {isAdmin
+              ? "No projects yet."
+              : "No projects assigned. Contact your administrator."}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => {
+              const total = project.panels.length
+              const completed = project.panels.filter(
+                (p) => p.status === "COMPLETED"
+              ).length
+              const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+
+              return (
+                <Link key={project.id} href={`/projects/${project.id}`} className="block">
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all min-h-[88px]">
+                    <h2 className="font-semibold text-gray-900 mb-0.5 text-base">
+                      {project.name}
+                    </h2>
+                    {project.clientName && (
+                      <p className="text-sm text-gray-500 mb-3">
+                        {project.clientName}
+                      </p>
+                    )}
+
+                    {/* Progress bar */}
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                        <span>
+                          {completed} / {total} panel{total !== 1 ? "s" : ""} completed
+                        </span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
     </main>
-  );
+  )
 }

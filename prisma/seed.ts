@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client'
+import { PrismaClient, Role, AssemblyType, PanelStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -10,9 +10,52 @@ const users: { username: string; name: string; pin: string; role: Role }[] = [
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function main() {
-  const seededUsernames: string[] = []
+const inspectionSteps = [
+  { stepOrder: 1, name: 'Slab Edge Firestopping',          description: '4lb density mineral wool, compressed ~50%, installed at panel top' },
+  { stepOrder: 2, name: 'Air Barrier & Joint Fabric Treatment', description: 'Continuous air/moisture barrier applied to sheathing joints' },
+  { stepOrder: 3, name: 'Drainage System Installation',    description: 'Proprietary 2-part drainage system at panel base and above openings' },
+  { stepOrder: 4, name: 'Insulation',                      description: 'EPS foam or mineral wool board installed per spec' },
+  { stepOrder: 5, name: 'Surface Preparation',             description: 'Rasping of EPS foam or drainscreen installation depending on assembly' },
+  { stepOrder: 6, name: 'Basecoat & Reinforcing Mesh',     description: 'Base cement coat with embedded fiberglass mesh' },
+  { stepOrder: 7, name: 'Primer Application',              description: 'Primer coat applied to prepared basecoat surface' },
+  { stepOrder: 8, name: 'Finish Coat',                     description: 'Acrylic finish – standard or specialty, with color and mix ID' },
+  { stepOrder: 9, name: 'Final Review & Sign-off',         description: 'Overall panel quality check and completion confirmation' },
+]
 
+const panelsData: {
+  panelIdentifier: string
+  assemblyType: AssemblyType
+  isShearWall: boolean
+  hasWindow: boolean
+  dimensions: string
+  location: string
+  elevation: string
+  status: PanelStatus
+}[] = [
+  { panelIdentifier: '3E-100', assemblyType: 'EPS', isShearWall: false, hasWindow: true,  dimensions: '3200mm x 2800mm', location: 'Level 3, Panel 100', elevation: 'East',  status: 'NOT_STARTED' },
+  { panelIdentifier: '3E-101', assemblyType: 'EPS', isShearWall: false, hasWindow: false, dimensions: '2400mm x 2800mm', location: 'Level 3, Panel 101', elevation: 'East',  status: 'NOT_STARTED' },
+  { panelIdentifier: '3E-102', assemblyType: 'FRR', isShearWall: true,  hasWindow: false, dimensions: '1800mm x 2800mm', location: 'Level 3, Panel 102', elevation: 'East',  status: 'NOT_STARTED' },
+  { panelIdentifier: '3N-200', assemblyType: 'EPS', isShearWall: false, hasWindow: true,  dimensions: '3600mm x 2800mm', location: 'Level 3, Panel 200', elevation: 'North', status: 'NOT_STARTED' },
+  { panelIdentifier: '4E-100', assemblyType: 'FRR', isShearWall: true,  hasWindow: true,  dimensions: '3200mm x 3200mm', location: 'Level 4, Panel 100', elevation: 'East',  status: 'NOT_STARTED' },
+]
+
+async function main() {
+  // ─── 0. Wipe all data in FK-safe order ────────────────────────────────────
+  console.log('🧹 Clearing database...')
+  await prisma.photo.deleteMany()
+  await prisma.auditLog.deleteMany()
+  await prisma.inspectionRecord.deleteMany()
+  await prisma.projectAssignment.deleteMany()
+  await prisma.panel.deleteMany()
+  await prisma.inspectionStep.deleteMany()
+  await prisma.project.deleteMany()
+  // Only delete users not in the seed list (preserve login credentials between runs)
+  await prisma.user.deleteMany({
+    where: { username: { notIn: users.map(u => u.username) } },
+  })
+  console.log('✅ Database cleared')
+
+  // ─── 1. Users ──────────────────────────────────────────────────────────────
   for (const user of users) {
     const hashed = await bcrypt.hash(user.pin, 10)
     await prisma.user.upsert({
@@ -20,15 +63,38 @@ async function main() {
       update: { name: user.name, pin: hashed, role: user.role },
       create: { username: user.username, name: user.name, pin: hashed, role: user.role },
     })
-    seededUsernames.push(user.username)
-    console.log(`✅ Upserted: ${user.username} (${user.role})`)
+    console.log(`✅ Upserted user: ${user.username} (${user.role})`)
   }
 
-  // Remove any users in the DB that are no longer in the list above
-  const { count } = await prisma.user.deleteMany({
-    where: { username: { notIn: seededUsernames } },
+  // ─── 2. Project ────────────────────────────────────────────────────────────
+  const project = await prisma.project.create({
+    data: {
+      name:        '18 Louisa – Burmont Construction',
+      description: 'EIFS prefabricated wall panels – Phase 1 shop manufacturing',
+      clientName:  'Burmont Construction',
+      address:     '18 Louisa Street, Ottawa, ON',
+    },
   })
-  if (count > 0) console.log(`🗑️  Removed ${count} user(s) no longer in seed list`)
+  console.log(`✅ Created project: "${project.name}" (${project.id})`)
+
+  // ─── 3. Panels ─────────────────────────────────────────────────────────────
+  for (const panel of panelsData) {
+    await prisma.panel.create({ data: { ...panel, projectId: project.id } })
+    console.log(`✅ Created panel: ${panel.panelIdentifier} (${panel.assemblyType})`)
+  }
+
+  // ─── 4. Project Assignment ─────────────────────────────────────────────────
+  const inspector = await prisma.user.findUniqueOrThrow({ where: { username: 'inspector' } })
+  await prisma.projectAssignment.create({
+    data: { userId: inspector.id, projectId: project.id },
+  })
+  console.log(`✅ Assigned inspector "${inspector.username}" to project "${project.name}"`)
+
+  // ─── 5. Inspection Steps ───────────────────────────────────────────────────
+  for (const step of inspectionSteps) {
+    await prisma.inspectionStep.create({ data: step })
+    console.log(`✅ Created inspection step ${step.stepOrder}: "${step.name}"`)
+  }
 }
 
 main()
