@@ -1,18 +1,20 @@
+import type { Metadata } from "next"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import NavBar from "@/components/NavBar"
+
+export const metadata: Metadata = {
+  title: "Projects — AXIS Total Envelope",
+}
 
 export default async function DashboardPage() {
   const session = await auth()
   const userId = session?.user?.id
   const role = session?.user?.role
+  const isAdmin = role === "ADMIN"
 
   const projects = await prisma.project.findMany({
-    where:
-      role === "ADMIN"
-        ? undefined
-        : { assignments: { some: { userId } } },
+    where: isAdmin ? undefined : { assignments: { some: { userId } } },
     include: {
       panels: { select: { status: true } },
     },
@@ -20,28 +22,31 @@ export default async function DashboardPage() {
   })
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <NavBar name={session?.user?.name} role={role} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          {role === "ADMIN" ? "Projects" : "Your Projects"}
+    <main className="flex-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-xl font-bold text-gray-900 mb-5">
+          {isAdmin ? "Projects" : "Your Projects"}
         </h1>
 
         {projects.length === 0 ? (
-          <p className="text-gray-500">No projects found.</p>
+          <p className="text-gray-500 text-sm">
+            {isAdmin
+              ? "No projects yet."
+              : "No projects assigned. Contact your administrator."}
+          </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => {
               const total = project.panels.length
               const completed = project.panels.filter(
                 (p) => p.status === "COMPLETED"
               ).length
+              const pct = total > 0 ? Math.round((completed / total) * 100) : 0
 
               return (
-                <Link key={project.id} href={`/projects/${project.id}`}>
-                  <div className="bg-white border border-gray-200 rounded-lg p-5 hover:border-gray-300 hover:shadow-sm transition-all h-full">
-                    <h2 className="font-semibold text-gray-900 mb-1">
+                <Link key={project.id} href={`/projects/${project.id}`} className="block">
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all min-h-[88px]">
+                    <h2 className="font-semibold text-gray-900 mb-0.5 text-base">
                       {project.name}
                     </h2>
                     {project.clientName && (
@@ -49,14 +54,21 @@ export default async function DashboardPage() {
                         {project.clientName}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 text-sm text-gray-600 mt-auto">
-                      <span>
-                        {total} panel{total !== 1 ? "s" : ""}
-                      </span>
-                      <span className="text-gray-300">·</span>
-                      <span>
-                        {completed} of {total} completed
-                      </span>
+
+                    {/* Progress bar */}
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                        <span>
+                          {completed} / {total} panel{total !== 1 ? "s" : ""} completed
+                        </span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </Link>

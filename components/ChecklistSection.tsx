@@ -43,6 +43,7 @@ export interface ChecklistSectionProps {
   role: string
   recordCount: number
   totalSteps: number
+  hideCta?: boolean
 }
 
 // ── Style maps ────────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ export default function ChecklistSection({
   role,
   recordCount,
   totalSteps,
+  hideCta = false,
 }: ChecklistSectionProps) {
   const router     = useRouter()
   const isInspector = role === "QC_INSPECTOR"
@@ -349,20 +351,17 @@ export default function ChecklistSection({
         {isInspector && (
           <div className="mt-4">
             {recordCount === totalSteps ? (
-              <button
-                disabled
-                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-green-50 text-green-700 text-sm font-medium cursor-not-allowed"
-              >
+              <div className="inline-block px-6 py-2.5 rounded-lg bg-green-50 text-green-700 text-sm font-medium">
                 Inspection Complete
-              </button>
-            ) : (
+              </div>
+            ) : !hideCta ? (
               <Link
                 href={`/panels/${panelId}/inspect`}
                 className="inline-block w-full sm:w-auto text-center px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
               >
                 {recordCount === 0 ? "Start Inspection" : "Continue Inspection"}
               </Link>
-            )}
+            ) : null}
           </div>
         )}
       </section>

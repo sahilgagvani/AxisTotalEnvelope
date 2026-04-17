@@ -355,10 +355,10 @@ export default function InspectionForm({
           )}
         </div>
 
-        {/* Result buttons */}
+        {/* Result buttons — stacked vertically for easy gloved use */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-3">Result</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-3">
             {(["PASS", "FAIL", "NA"] as const).map((r) => {
               const cfg = resultConfig[r]
               const isSelected = result === r
@@ -367,7 +367,7 @@ export default function InspectionForm({
                   key={r}
                   type="button"
                   onClick={() => setResult(r)}
-                  className={`h-16 rounded-xl text-base font-semibold transition-all active:scale-95 ${
+                  className={`w-full min-h-[56px] rounded-xl text-base font-semibold transition-all active:scale-[0.99] ${
                     isSelected
                       ? cfg.active
                       : "bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300"
@@ -399,7 +399,7 @@ export default function InspectionForm({
                 ? "Describe the issue (required)…"
                 : "Optional notes…"
             }
-            className={`w-full rounded-lg px-3 py-2.5 text-sm border resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 transition-colors ${
+            className={`w-full rounded-lg px-3 py-2.5 text-base border resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 transition-colors min-h-[80px] ${
               isFail && !notes.trim()
                 ? "border-red-300 focus:ring-red-400"
                 : "border-gray-200"

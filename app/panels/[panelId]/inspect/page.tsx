@@ -1,7 +1,25 @@
+import type { Metadata } from "next"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect, notFound } from "next/navigation"
 import InspectionForm from "@/components/InspectionForm"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ panelId: string }>
+}): Promise<Metadata> {
+  const { panelId } = await params
+  const panel = await prisma.panel.findUnique({
+    where: { id: panelId },
+    select: { panelIdentifier: true },
+  })
+  return {
+    title: panel
+      ? `Inspecting ${panel.panelIdentifier} — AXIS Total Envelope`
+      : "Inspection — AXIS Total Envelope",
+  }
+}
 
 export default async function InspectPage({
   params,
@@ -13,7 +31,6 @@ export default async function InspectPage({
   const userId = session?.user?.id
   const role   = session?.user?.role
 
-  // Admins view panels read-only; non-authenticated users go to login
   if (!userId) redirect("/login")
   if (role === "ADMIN") redirect(`/panels/${panelId}`)
 
@@ -23,13 +40,11 @@ export default async function InspectPage({
   })
   if (!panel) notFound()
 
-  // Inspector must be assigned to this project
   const assignment = await prisma.projectAssignment.findUnique({
     where: { userId_projectId: { userId, projectId: panel.projectId } },
   })
   if (!assignment) redirect("/dashboard")
 
-  // Fetch steps and any existing records in parallel
   const [steps, existingRecords] = await Promise.all([
     prisma.inspectionStep.findMany({ orderBy: { stepOrder: "asc" } }),
     prisma.inspectionRecord.findMany({
@@ -39,8 +54,6 @@ export default async function InspectPage({
   ])
 
   const completedStepIds = new Set(existingRecords.map((r) => r.stepId))
-
-  // First incomplete step index; -1 means all done → use steps.length to trigger completion screen
   const firstIncomplete = steps.findIndex((s) => !completedStepIds.has(s.id))
   const initialStepIndex = firstIncomplete === -1 ? steps.length : firstIncomplete
 
