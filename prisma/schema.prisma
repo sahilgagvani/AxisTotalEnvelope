@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  QC_INSPECTOR
+}
+
+enum PanelStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AssemblyType {
+  EPS
+  FRR
+}
+
+enum InspectionResult {
+  PASS
+  FAIL
+  NA
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  username            String               @unique
+  name                String?
+  pin                 String?
+  role                Role                 @default(QC_INSPECTOR)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  inspectionRecords   InspectionRecord[]
+  photos              Photo[]
+  auditLogs           AuditLog[]
+  projectAssignments  ProjectAssignment[]
+}
+
+model Project {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  description String?
+  clientName  String?
+  address     String?
+  panels      Panel[]
+  assignments ProjectAssignment[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model Panel {
+  id                String             @id @default(cuid())
+  panelIdentifier   String
+  projectId         String
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  qrCodeUrl         String?
+  status            PanelStatus        @default(NOT_STARTED)
+  dimensions        String?
+  location          String?
+  elevation         String?
+  assemblyType      AssemblyType?
+  isShearWall       Boolean            @default(false)
+  hasWindow         Boolean            @default(false)
+  drawingUrl        String?
+  inspectionRecords InspectionRecord[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model InspectionStep {
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  stepOrder         Int                @unique
+  inspectionRecords InspectionRecord[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model InspectionRecord {
+  id               String           @id @default(cuid())
+  panelId          String
+  panel            Panel            @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  stepId           String
+  step             InspectionStep   @relation(fields: [stepId], references: [id])
+  inspectorId      String
+  inspector        User             @relation(fields: [inspectorId], references: [id])
+  result           InspectionResult
+  notes            String?
+  completedAt      DateTime         @default(now())
+  photos           Photo[]
+  auditLogs        AuditLog[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([panelId, stepId])
+}
+
+model Photo {
+  id                 String           @id @default(cuid())
+  url                String
+  inspectionRecordId String
+  inspectionRecord   InspectionRecord @relation(fields: [inspectionRecordId], references: [id], onDelete: Cascade)
+  uploadedById       String
+  uploadedBy         User             @relation(fields: [uploadedById], references: [id])
+  caption            String?
+  createdAt          DateTime         @default(now())
+}
+
+model AuditLog {
+  id                 String           @id @default(cuid())
+  inspectionRecordId String
+  inspectionRecord   InspectionRecord @relation(fields: [inspectionRecordId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User             @relation(fields: [userId], references: [id])
+  action             String
+  previousResult     String?
+  newResult          String?
+  previousNotes      String?
+  newNotes           String?
+  timestamp          DateTime         @default(now())
+}
+
+model ProjectAssignment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, projectId])
+}
