@@ -5,8 +5,8 @@ const prisma = new PrismaClient()
 
 // ─── Edit this list to add/remove/update users ───────────────────────────────
 const users: { username: string; name: string; pin: string; role: Role }[] = [
-  { username: 'admin',     name: 'Sahil', pin: '1234', role: 'ADMIN'        },
-  { username: 'inspector', name: 'Ash',  pin: '5678', role: 'QC_INSPECTOR' },
+  { username: 'admin',     name: 'Ashraf',    pin: '1234', role: 'ADMIN'        },
+  { username: 'inspector', name: 'Joanna', pin: '5678', role: 'QC_INSPECTOR' },
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -69,10 +69,10 @@ async function main() {
   // ─── 2. Project ────────────────────────────────────────────────────────────
   const project = await prisma.project.create({
     data: {
-      name:        '18 Louisa – Burmont Construction',
+      name:        'Pinache Construction',
       description: 'EIFS prefabricated wall panels – Phase 1 shop manufacturing',
       clientName:  'Burmont Construction',
-      address:     '18 Louisa Street, Ottawa, ON',
+      address:     '18 Street, Ottawa, ON',
     },
   })
   console.log(`✅ Created project: "${project.name}" (${project.id})`)
