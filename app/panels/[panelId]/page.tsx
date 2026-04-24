@@ -71,14 +71,12 @@ export default async function PanelDetailPage({
 }) {
   const { panelId } = await params
   const session = await auth()
-  const userId  = session?.user?.id
   const role    = session?.user?.role
   const isInspector = role === "QC_INSPECTOR"
 
   const panel = await prisma.panel.findUnique({
     where: { id: panelId },
     include: {
-      project: true,
       inspectionRecords: {
         include: {
           step:      true,
@@ -94,27 +92,6 @@ export default async function PanelDetailPage({
   })
 
   if (!panel) notFound()
-
-  if (role !== "ADMIN") {
-    const assignment = await prisma.projectAssignment.findUnique({
-      where: {
-        userId_projectId: { userId: userId!, projectId: panel.projectId },
-      },
-    })
-    if (!assignment) {
-      return (
-        <main className="flex-1">
-          <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Not authorized</h1>
-            <p className="text-gray-500 mb-6">You are not assigned to this project.</p>
-            <Link href="/dashboard" className="text-blue-600 hover:underline text-sm">
-              ← Back to dashboard
-            </Link>
-          </div>
-        </main>
-      )
-    }
-  }
 
   const steps = await prisma.inspectionStep.findMany({
     orderBy: { stepOrder: "asc" },
@@ -162,14 +139,7 @@ export default async function PanelDetailPage({
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-4 flex-wrap min-w-0">
               <Link href="/dashboard" className="hover:text-gray-700 shrink-0">
-                Projects
-              </Link>
-              <span className="shrink-0">/</span>
-              <Link
-                href={`/projects/${panel.projectId}`}
-                className="hover:text-gray-700 truncate max-w-[140px] sm:max-w-xs"
-              >
-                {panel.project.name}
+                Panels
               </Link>
               <span className="shrink-0">/</span>
               <span className="text-gray-900 font-medium shrink-0">

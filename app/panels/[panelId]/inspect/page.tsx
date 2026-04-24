@@ -36,14 +36,8 @@ export default async function InspectPage({
 
   const panel = await prisma.panel.findUnique({
     where: { id: panelId },
-    include: { project: true },
   })
   if (!panel) notFound()
-
-  const assignment = await prisma.projectAssignment.findUnique({
-    where: { userId_projectId: { userId, projectId: panel.projectId } },
-  })
-  if (!assignment) redirect("/dashboard")
 
   const [steps, existingRecords] = await Promise.all([
     prisma.inspectionStep.findMany({ orderBy: { stepOrder: "asc" } }),
