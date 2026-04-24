@@ -200,7 +200,24 @@ export default function InspectionForm({
 
   const isComplete   = currentStepIndex >= steps.length
   const currentStep  = isComplete ? null : steps[currentStepIndex]
-  const isLastStep   = currentStepIndex === steps.length - 1
+  const isLastStep   = steps.filter((s) => !completedMap.has(s.id)).length === 1
+
+  const advanceFrom = (map: Map<string, Result>, fromIndex: number) => {
+    const next = fromIndex + 1
+    if (next >= steps.length) {
+      const firstPending = steps.findIndex((s) => !map.has(s.id))
+      setCurrentStepIndex(firstPending !== -1 ? firstPending : steps.length)
+    } else {
+      setCurrentStepIndex(next)
+    }
+  }
+
+  const handleSkip = () => {
+    setResult(null)
+    setNotes("")
+    setPhotos([])
+    advanceFrom(completedMap, currentStepIndex)
+  }
 
   // Validation
   const isFail    = result === "FAIL"
@@ -273,8 +290,9 @@ export default function InspectionForm({
       }
 
       // 3. Advance state
-      setCompletedMap((prev) => new Map(prev).set(currentStep.id, result))
-      setCurrentStepIndex((i) => i + 1)
+      const updatedMap = new Map(completedMap).set(currentStep.id, result)
+      setCompletedMap(updatedMap)
+      advanceFrom(updatedMap, currentStepIndex)
       setResult(null)
       setNotes("")
       setPhotos([])
@@ -359,7 +377,7 @@ export default function InspectionForm({
         <div>
           <p className="text-sm font-medium text-gray-700 mb-3">Result</p>
           <div className="flex flex-col gap-3">
-            {(["PASS", "FAIL", "NA"] as const).map((r) => {
+            {(["PASS", "FAIL"] as const).map((r) => {
               const cfg = resultConfig[r]
               const isSelected = result === r
               return (
@@ -377,6 +395,13 @@ export default function InspectionForm({
                 </button>
               )
             })}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-full min-h-[56px] rounded-xl text-base font-medium text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Skip for now
+            </button>
           </div>
         </div>
 
