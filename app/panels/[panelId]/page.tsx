@@ -154,7 +154,7 @@ export default async function PanelDetailPage({
 
   return (
     <>
-      <main className={`flex-1 ${showStickyInspect ? "pb-24" : ""}`}>
+      <main className={`flex-1 ${showStickyInspect ? "pb-28" : ""}`}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
           {/* ── Panel Header ───────────────────────────────────────────────── */}
@@ -281,13 +281,16 @@ export default async function PanelDetailPage({
         </div>
       </main>
 
-      {/* Sticky bottom inspection CTA — inspectors with incomplete steps */}
+      {/* Floating inspection CTA — inspectors with incomplete steps */}
       {showStickyInspect && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 px-4 py-3 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
           <Link
             href={`/panels/${panelId}/inspect`}
-            className="block w-full text-center py-4 rounded-xl bg-gray-900 text-white text-base font-semibold hover:bg-gray-700 active:bg-gray-800 transition-colors"
+            className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gray-900 text-white text-sm font-semibold shadow-xl shadow-gray-900/30 hover:bg-gray-700 active:scale-95 transition-all whitespace-nowrap"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
             {recordCount === 0 ? "Start Inspection" : "Continue Inspection"}
           </Link>
         </div>
