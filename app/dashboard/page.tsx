@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import QrScanButton from "@/components/QrScanButton"
 
 export const metadata: Metadata = {
   title: "Projects — AXIS Total Envelope",
@@ -11,6 +12,7 @@ export default async function DashboardPage() {
   const session = await auth()
   const userId = session?.user?.id
   const role = session?.user?.role
+  const name = session?.user?.name
   const isAdmin = role === "ADMIN"
 
   const projects = await prisma.project.findMany({
@@ -55,7 +57,6 @@ export default async function DashboardPage() {
                       </p>
                     )}
 
-                    {/* Progress bar */}
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
                         <span>
@@ -76,6 +77,16 @@ export default async function DashboardPage() {
             })}
           </div>
         )}
+
+        {/* Greeting + QR scan */}
+        <div className="flex flex-col items-center gap-4 mt-16">
+          {name && (
+            <p className="text-2xl font-semibold text-gray-700">
+              Welcome back, <span className="text-gray-900">{name}</span>
+            </p>
+          )}
+          {!isAdmin && <QrScanButton />}
+        </div>
       </div>
     </main>
   )
