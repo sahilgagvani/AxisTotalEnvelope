@@ -398,9 +398,12 @@ export default function InspectionForm({
             <button
               type="button"
               onClick={handleSkip}
-              className="w-full min-h-[56px] rounded-xl text-base font-medium text-gray-400 hover:text-gray-600 transition-colors"
+              className="w-full min-h-[56px] rounded-xl border-2 border-dashed border-gray-200 text-gray-400 text-base font-medium flex items-center justify-center gap-2 hover:border-gray-300 hover:text-gray-500 transition-colors active:scale-[0.99]"
             >
               Skip for now
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
