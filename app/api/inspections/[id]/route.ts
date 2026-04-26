@@ -57,19 +57,6 @@ export async function PUT(
     return NextResponse.json({ error: "Inspection record not found" }, { status: 404 })
   }
 
-  // ── Access control ────────────────────────────────────────────────────────
-  const assignment = await prisma.projectAssignment.findUnique({
-    where: {
-      userId_projectId: { userId, projectId: existing.panel.projectId },
-    },
-  })
-  if (!assignment) {
-    return NextResponse.json(
-      { error: "You are not assigned to this project" },
-      { status: 403 }
-    )
-  }
-
   // ── Capture previous state ────────────────────────────────────────────────
   const previousResult = existing.result as string
   const previousNotes  = existing.notes

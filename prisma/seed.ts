@@ -5,21 +5,21 @@ const prisma = new PrismaClient()
 
 // ─── Edit this list to add/remove/update users ───────────────────────────────
 const users: { username: string; name: string; pin: string; role: Role }[] = [
-  { username: 'admin',     name: 'Ashraf',    pin: '1234', role: 'ADMIN'        },
-  { username: 'inspector', name: 'Joanna', pin: '5678', role: 'QC_INSPECTOR' },
+  { username: 'admin',     name: 'Ashraf',  pin: '1234', role: 'ADMIN'        },
+  { username: 'inspector', name: 'Joanna',  pin: '5678', role: 'QC_INSPECTOR' },
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
 const inspectionSteps = [
-  { stepOrder: 1, name: 'Slab Edge Firestopping',          description: '4lb density mineral wool, compressed ~50%, installed at panel top' },
-  { stepOrder: 2, name: 'Air Barrier & Joint Fabric Treatment', description: 'Continuous air/moisture barrier applied to sheathing joints' },
-  { stepOrder: 3, name: 'Drainage System Installation',    description: 'Proprietary 2-part drainage system at panel base and above openings' },
-  { stepOrder: 4, name: 'Insulation',                      description: 'EPS foam or mineral wool board installed per spec' },
-  { stepOrder: 5, name: 'Surface Preparation',             description: 'Rasping of EPS foam or drainscreen installation depending on assembly' },
-  { stepOrder: 6, name: 'Basecoat & Reinforcing Mesh',     description: 'Base cement coat with embedded fiberglass mesh' },
-  { stepOrder: 7, name: 'Primer Application',              description: 'Primer coat applied to prepared basecoat surface' },
-  { stepOrder: 8, name: 'Finish Coat',                     description: 'Acrylic finish – standard or specialty, with color and mix ID' },
-  { stepOrder: 9, name: 'Final Review & Sign-off',         description: 'Overall panel quality check and completion confirmation' },
+  { stepOrder: 1, name: 'Slab Edge Firestopping',               description: '4lb density mineral wool, compressed ~50%, installed at panel top' },
+  { stepOrder: 2, name: 'Air Barrier & Joint Fabric Treatment',  description: 'Continuous air/moisture barrier applied to sheathing joints' },
+  { stepOrder: 3, name: 'Drainage System Installation',          description: 'Proprietary 2-part drainage system at panel base and above openings' },
+  { stepOrder: 4, name: 'Insulation',                            description: 'EPS foam or mineral wool board installed per spec' },
+  { stepOrder: 5, name: 'Surface Preparation',                   description: 'Rasping of EPS foam or drainscreen installation depending on assembly' },
+  { stepOrder: 6, name: 'Basecoat & Reinforcing Mesh',           description: 'Base cement coat with embedded fiberglass mesh' },
+  { stepOrder: 7, name: 'Primer Application',                    description: 'Primer coat applied to prepared basecoat surface' },
+  { stepOrder: 8, name: 'Finish Coat',                           description: 'Acrylic finish – standard or specialty, with color and mix ID' },
+  { stepOrder: 9, name: 'Final Review & Sign-off',               description: 'Overall panel quality check and completion confirmation' },
 ]
 
 const panelsData: {
@@ -45,10 +45,8 @@ async function main() {
   await prisma.photo.deleteMany()
   await prisma.auditLog.deleteMany()
   await prisma.inspectionRecord.deleteMany()
-  await prisma.projectAssignment.deleteMany()
   await prisma.panel.deleteMany()
   await prisma.inspectionStep.deleteMany()
-  await prisma.project.deleteMany()
   // Only delete users not in the seed list (preserve login credentials between runs)
   await prisma.user.deleteMany({
     where: { username: { notIn: users.map(u => u.username) } },
@@ -66,31 +64,13 @@ async function main() {
     console.log(`✅ Upserted user: ${user.username} (${user.role})`)
   }
 
-  // ─── 2. Project ────────────────────────────────────────────────────────────
-  const project = await prisma.project.create({
-    data: {
-      name:        'Pinache Construction',
-      description: 'EIFS prefabricated wall panels – Phase 1 shop manufacturing',
-      clientName:  'Burmont Construction',
-      address:     '18 Street, Ottawa, ON',
-    },
-  })
-  console.log(`✅ Created project: "${project.name}" (${project.id})`)
-
-  // ─── 3. Panels ─────────────────────────────────────────────────────────────
+  // ─── 2. Panels ─────────────────────────────────────────────────────────────
   for (const panel of panelsData) {
-    await prisma.panel.create({ data: { ...panel, projectId: project.id } })
+    await prisma.panel.create({ data: panel })
     console.log(`✅ Created panel: ${panel.panelIdentifier} (${panel.assemblyType})`)
   }
 
-  // ─── 4. Project Assignment ─────────────────────────────────────────────────
-  const inspector = await prisma.user.findUniqueOrThrow({ where: { username: 'inspector' } })
-  await prisma.projectAssignment.create({
-    data: { userId: inspector.id, projectId: project.id },
-  })
-  console.log(`✅ Assigned inspector "${inspector.username}" to project "${project.name}"`)
-
-  // ─── 5. Inspection Steps ───────────────────────────────────────────────────
+  // ─── 3. Inspection Steps ───────────────────────────────────────────────────
   for (const step of inspectionSteps) {
     await prisma.inspectionStep.create({ data: step })
     console.log(`✅ Created inspection step ${step.stepOrder}: "${step.name}"`)

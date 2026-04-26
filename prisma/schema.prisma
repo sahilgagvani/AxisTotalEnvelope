@@ -30,36 +30,21 @@ enum InspectionResult {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  username            String               @unique
-  name                String?
-  pin                 String?
-  role                Role                 @default(QC_INSPECTOR)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  inspectionRecords   InspectionRecord[]
-  photos              Photo[]
-  auditLogs           AuditLog[]
-  projectAssignments  ProjectAssignment[]
-}
-
-model Project {
-  id          String              @id @default(cuid())
-  name        String              @unique
-  description String?
-  clientName  String?
-  address     String?
-  panels      Panel[]
-  assignments ProjectAssignment[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id                String             @id @default(cuid())
+  username          String             @unique
+  name              String?
+  pin               String?
+  role              Role               @default(QC_INSPECTOR)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  inspectionRecords InspectionRecord[]
+  photos            Photo[]
+  auditLogs         AuditLog[]
 }
 
 model Panel {
   id                String             @id @default(cuid())
   panelIdentifier   String
-  projectId         String
-  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   qrCodeUrl         String?
   status            PanelStatus        @default(NOT_STARTED)
   dimensions        String?
@@ -128,13 +113,3 @@ model AuditLog {
   timestamp          DateTime         @default(now())
 }
 
-model ProjectAssignment {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  assignedAt DateTime @default(now())
-
-  @@unique([userId, projectId])
-}
