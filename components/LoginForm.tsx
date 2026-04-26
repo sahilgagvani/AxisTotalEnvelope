@@ -15,6 +15,12 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  function handleEnterKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter" || loading) return
+
+    e.currentTarget.form?.requestSubmit()
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -77,6 +83,7 @@ export default function LoginForm() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={handleEnterKeyDown}
                 className="w-full rounded-lg border border-gray-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[48px]"
               />
             </div>
@@ -98,6 +105,7 @@ export default function LoginForm() {
                 required
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onKeyDown={handleEnterKeyDown}
                 className="w-full rounded-lg border border-gray-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[48px]"
               />
             </div>
