@@ -7,6 +7,7 @@ const prisma = new PrismaClient()
 const users: { username: string; name: string; pin: string; role: Role }[] = [
   { username: 'admin',     name: 'Ashraf',  pin: '1234', role: 'ADMIN'        },
   { username: 'inspector', name: 'Joanna',  pin: '5678', role: 'QC_INSPECTOR' },
+  { username: 'engineer',  name: 'Sahil',   pin: '5678', role: 'ENGINEER'     },
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 

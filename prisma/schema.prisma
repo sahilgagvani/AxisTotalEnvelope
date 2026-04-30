@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   ADMIN
   QC_INSPECTOR
+  ENGINEER
 }
 
 enum PanelStatus {
