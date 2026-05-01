@@ -4,10 +4,10 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 // ─── Edit this list to add/remove/update users ───────────────────────────────
-const users: { username: string; name: string; pin: string; role: Role }[] = [
-  { username: 'admin',     name: 'Ashraf',  pin: '1234', role: 'ADMIN'        },
-  { username: 'inspector', name: 'Joanna',  pin: '5678', role: 'QC_INSPECTOR' },
-  { username: 'engineer',  name: 'Sahil',   pin: '5678', role: 'ENGINEER'     },
+const users: { username: string; name: string; pin: string; role: Role; quickLogin: boolean }[] = [
+  { username: 'admin',     name: 'Ashraf',  pin: '1234', role: 'ADMIN',        quickLogin: false },
+  { username: 'inspector', name: 'Joanna',  pin: '5678', role: 'QC_INSPECTOR', quickLogin: true  },
+  { username: 'engineer',  name: 'Sahil',   pin: '5678', role: 'ENGINEER',     quickLogin: true  },
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -59,8 +59,8 @@ async function main() {
     const hashed = await bcrypt.hash(user.pin, 10)
     await prisma.user.upsert({
       where:  { username: user.username },
-      update: { name: user.name, pin: hashed, role: user.role },
-      create: { username: user.username, name: user.name, pin: hashed, role: user.role },
+      update: { name: user.name, pin: hashed, role: user.role, quickLogin: user.quickLogin },
+      create: { username: user.username, name: user.name, pin: hashed, role: user.role, quickLogin: user.quickLogin },
     })
     console.log(`✅ Upserted user: ${user.username} (${user.role})`)
   }

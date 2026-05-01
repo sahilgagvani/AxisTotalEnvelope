@@ -1,53 +1,74 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, forwardRef } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 
 type Mode = "select" | "quick-pin" | "credentials"
 
-const ROLES = [
-  {
-    label: "Admin",
-    username: "admin",
-    initial: "A",
-    color: "bg-blue-100 text-blue-700",
-    ring: "ring-blue-200",
-    description: "Full system access",
-  },
-  {
-    label: "Inspector",
-    username: "inspector",
-    initial: "I",
-    color: "bg-emerald-100 text-emerald-700",
-    ring: "ring-emerald-200",
-    description: "QC inspection workflow",
-  },
-  {
-    label: "Engineer",
-    username: "engineer",
-    initial: "E",
-    color: "bg-violet-100 text-violet-700",
-    ring: "ring-violet-200",
-    description: "Engineering view",
-  },
-]
+type QuickUser = {
+  id: string
+  username: string
+  name: string | null
+  role: string
+}
+
+const ROLE_COLORS: Record<string, { color: string; ring: string }> = {
+  ADMIN:        { color: "bg-blue-100 text-blue-700",    ring: "ring-blue-200" },
+  QC_INSPECTOR: { color: "bg-emerald-100 text-emerald-700", ring: "ring-emerald-200" },
+  ENGINEER:     { color: "bg-violet-100 text-violet-700",  ring: "ring-violet-200" },
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN:        "Admin",
+  QC_INSPECTOR: "Inspector",
+  ENGINEER:     "Engineer",
+}
+
+const ROLE_DESC: Record<string, string> = {
+  ADMIN:        "Full system access",
+  QC_INSPECTOR: "QC inspection workflow",
+  ENGINEER:     "Engineering view",
+}
+
+const ADMIN_TILE: QuickUser = {
+  id: "__admin__",
+  username: "admin",
+  name: "Admin",
+  role: "ADMIN",
+}
+
+function initials(name: string | null, username: string) {
+  const display = name ?? username
+  const parts = display.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return display.slice(0, 2).toUpperCase()
+}
 
 export default function LoginForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl  = searchParams.get("callbackUrl") ?? "/dashboard"
 
-  const [mode, setMode]               = useState<Mode>("select")
-  const [selectedRole, setSelectedRole] = useState<typeof ROLES[number] | null>(null)
-  const [username, setUsername]       = useState("")
-  const [pin, setPin]                 = useState("")
-  const [error, setError]             = useState<string | null>(null)
-  const [loading, setLoading]         = useState(false)
+  const [tiles, setTiles]                 = useState<QuickUser[]>([ADMIN_TILE])
+  const [mode, setMode]                   = useState<Mode>("select")
+  const [selectedUser, setSelectedUser]   = useState<QuickUser | null>(null)
+  const [username, setUsername]           = useState("")
+  const [pin, setPin]                     = useState("")
+  const [error, setError]                 = useState<string | null>(null)
+  const [loading, setLoading]             = useState(false)
 
   const pinRef      = useRef<HTMLInputElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
+
+  // Load dynamic quick-login users, always prepend admin tile
+  useEffect(() => {
+    fetch("/api/users/quick-login")
+      .then((r) => r.json())
+      .then((data: QuickUser[]) => setTiles([ADMIN_TILE, ...data]))
+      .catch(() => {}) // keep admin tile on error
+  }, [])
 
   useEffect(() => {
     if (mode === "quick-pin") pinRef.current?.focus()
@@ -56,21 +77,21 @@ export default function LoginForm() {
 
   function reset() {
     setMode("select")
-    setSelectedRole(null)
+    setSelectedUser(null)
     setUsername("")
     setPin("")
     setError(null)
   }
 
-  function pickRole(role: typeof ROLES[number]) {
-    setSelectedRole(role)
+  function pickUser(user: QuickUser) {
+    setSelectedUser(user)
     setPin("")
     setError(null)
     setMode("quick-pin")
   }
 
   function openCredentials() {
-    setSelectedRole(null)
+    setSelectedUser(null)
     setUsername("")
     setPin("")
     setError(null)
@@ -108,6 +129,10 @@ export default function LoginForm() {
     if (e.key === "Enter" && !loading) submit(usernameValue)
   }
 
+  const { color, ring } = selectedUser
+    ? (ROLE_COLORS[selectedUser.role] ?? ROLE_COLORS.QC_INSPECTOR)
+    : { color: "", ring: "" }
+
   return (
     <main className="flex-1 flex items-center justify-center px-4 py-10 bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
       <div className="w-full max-w-sm">
@@ -131,30 +156,35 @@ export default function LoginForm() {
             <>
               <div className="px-6 pt-7 pb-5 border-b border-gray-100">
                 <h1 className="text-lg font-semibold text-gray-900">Sign in</h1>
-                <p className="text-sm text-gray-400 mt-0.5">Choose your role to get started</p>
+                <p className="text-sm text-gray-400 mt-0.5">Choose your account to get started</p>
               </div>
 
               <div className="px-4 py-4 flex flex-col gap-2">
-                {ROLES.map((role) => (
-                  <button
-                    key={role.username}
-                    onClick={() => pickRole(role)}
-                    className="group flex items-center gap-3.5 w-full rounded-xl px-3.5 py-3 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  >
-                    <span className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold ring-1 shrink-0 ${role.color} ${role.ring}`}>
-                      {role.initial}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-semibold text-gray-800 group-hover:text-gray-900">
-                        {role.label}
+                {tiles.map((user) => {
+                  const c = ROLE_COLORS[user.role] ?? ROLE_COLORS.QC_INSPECTOR
+                  return (
+                    <button
+                      key={user.id}
+                      onClick={() => pickUser(user)}
+                      className="group flex items-center gap-3.5 w-full rounded-xl px-3.5 py-3 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                    >
+                      <span className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold ring-1 shrink-0 ${c.color} ${c.ring}`}>
+                        {initials(user.name, user.username)}
                       </span>
-                      <span className="block text-xs text-gray-400 mt-0.5">{role.description}</span>
-                    </span>
-                    <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                ))}
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold text-gray-800 group-hover:text-gray-900 truncate">
+                          {user.name ?? user.username}
+                        </span>
+                        <span className="block text-xs text-gray-400 mt-0.5">
+                          {ROLE_DESC[user.role] ?? ROLE_LABELS[user.role]}
+                        </span>
+                      </span>
+                      <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="px-6 pb-6">
@@ -174,7 +204,7 @@ export default function LoginForm() {
           )}
 
           {/* ── Quick PIN entry ── */}
-          {mode === "quick-pin" && selectedRole && (
+          {mode === "quick-pin" && selectedUser && (
             <>
               <div className="px-6 pt-6 pb-5 border-b border-gray-100 flex items-center gap-3">
                 <button
@@ -188,26 +218,24 @@ export default function LoginForm() {
                 </button>
                 <div>
                   <h1 className="text-lg font-semibold text-gray-900 leading-tight">
-                    {selectedRole.label}
+                    {selectedUser.name ?? selectedUser.username}
                   </h1>
                   <p className="text-sm text-gray-400">Enter your PIN to continue</p>
                 </div>
               </div>
 
               <div className="px-6 py-6 space-y-4">
-                {/* Role badge */}
                 <div className="flex justify-center">
-                  <span className={`flex items-center justify-center w-14 h-14 rounded-full text-xl font-bold ring-2 ${selectedRole.color} ${selectedRole.ring}`}>
-                    {selectedRole.initial}
+                  <span className={`flex items-center justify-center w-14 h-14 rounded-full text-xl font-bold ring-2 ${color} ${ring}`}>
+                    {initials(selectedUser.name, selectedUser.username)}
                   </span>
                 </div>
 
-                {/* PIN dots display + hidden input */}
                 <PinInput
                   ref={pinRef}
                   value={pin}
                   onChange={(v) => { setPin(v); setError(null) }}
-                  onEnter={() => submit(selectedRole.username)}
+                  onEnter={() => submit(selectedUser.username)}
                   disabled={loading}
                 />
 
@@ -216,7 +244,7 @@ export default function LoginForm() {
                 )}
 
                 <button
-                  onClick={() => submit(selectedRole.username)}
+                  onClick={() => submit(selectedUser.username)}
                   disabled={loading || pin.length !== 4}
                   className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition-colors min-h-[48px]"
                 >
@@ -305,8 +333,6 @@ export default function LoginForm() {
 }
 
 /* ── PIN dot input ──────────────────────────────────────────────────────────── */
-import { forwardRef } from "react"
-
 const PinInput = forwardRef<
   HTMLInputElement,
   { value: string; onChange: (v: string) => void; onEnter: () => void; disabled: boolean }
@@ -329,7 +355,6 @@ const PinInput = forwardRef<
           ) : null}
         </div>
       ))}
-      {/* Hidden input captures keystrokes */}
       <input
         ref={ref}
         type="password"
