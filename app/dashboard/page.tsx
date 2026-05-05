@@ -83,7 +83,7 @@ export default async function DashboardPage() {
   const name    = session?.user?.name
 
   const panels = await prisma.panel.findMany({
-    orderBy: [{ elevation: "asc" }, { panelIdentifier: "asc" }],
+    orderBy: [{ floor: "asc" }, { panelIdentifier: "asc" }],
   })
 
   const total      = panels.length
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["Panel ID", "Assembly", "Dimensions", "Location", "Elevation", "Status"].map((h) => (
+                    {["Panel ID", "Assembly", "Floor", "Direction", "Drawing", "Status"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
@@ -213,13 +213,13 @@ export default async function DashboardPage() {
                         <AssemblyBadge type={panel.assemblyType} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                        {panel.dimensions ?? "—"}
+                        {panel.floor}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.location ?? "—"}
+                        {panel.direction}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.elevation ?? "—"}
+                        {panel.drawingSheet ?? "—"}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={panel.status} />
