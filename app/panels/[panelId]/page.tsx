@@ -159,11 +159,16 @@ export default async function PanelDetailPage({
             {/* Metadata grid — 2-col on mobile, 3-col on sm+ */}
             <dl className="bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
               {[
-                { label: "Dimensions",     value: panel.dimensions ?? "—" },
-                { label: "Location",       value: panel.location   ?? "—" },
-                { label: "Elevation",      value: panel.elevation  ?? "—" },
+                { label: "Floor",          value: String(panel.floor) },
+                { label: "Direction",      value: panel.direction },
+                { label: "Height (mm)",    value: String(panel.heightMm) },
+                { label: "Width (mm)",     value: String(panel.widthMm) },
+                { label: "Diagonal (mm)",  value: panel.diagonalMm != null ? String(panel.diagonalMm) : "—" },
+                { label: "Drawing Sheet",  value: panel.drawingSheet ?? "—" },
                 { label: "Shear Wall",     value: panel.isShearWall ? "Yes" : "No" },
-                { label: "Window",         value: panel.hasWindow   ? "Yes" : "No" },
+                { label: "Openings",       value: String(panel.openingCount) },
+                { label: "Opening Refs",   value: panel.openingCallouts ?? "—" },
+                { label: "Finishes",       value: panel.finishes ?? "—" },
                 {
                   label: "Assembly System",
                   value: panel.assemblyType

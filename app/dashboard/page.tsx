@@ -5,6 +5,43 @@ import Link from "next/link"
 import QrScanButton from "@/components/QrScanButton"
 import { PanelStatus, AssemblyType } from "@prisma/client"
 
+function AdminAction({
+  href,
+  icon,
+  label,
+  description,
+  disabled,
+}: {
+  href: string
+  icon: React.ReactNode
+  label: string
+  description: string
+  disabled?: boolean
+}) {
+  const inner = (
+    <div className={`flex items-center gap-3.5 rounded-xl border px-4 py-3.5 transition-colors ${
+      disabled
+        ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+        : "border-gray-200 bg-white hover:bg-gray-50 active:bg-gray-100"
+    }`}>
+      <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+        {icon}
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold text-gray-900">{label}</span>
+        <span className="block text-xs text-gray-400 mt-0.5">{description}</span>
+      </span>
+      {!disabled && (
+        <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      )}
+    </div>
+  )
+  if (disabled) return inner
+  return <Link href={href}>{inner}</Link>
+}
+
 export const metadata: Metadata = {
   title: "Panels — AXIS Total Envelope",
 }
@@ -46,7 +83,7 @@ export default async function DashboardPage() {
   const name    = session?.user?.name
 
   const panels = await prisma.panel.findMany({
-    orderBy: [{ elevation: "asc" }, { panelIdentifier: "asc" }],
+    orderBy: [{ floor: "asc" }, { panelIdentifier: "asc" }],
   })
 
   const total      = panels.length
@@ -72,6 +109,33 @@ export default async function DashboardPage() {
           </div>
           {!isAdmin && <QrScanButton />}
         </div>
+
+        {/* Admin actions */}
+        {isAdmin && (
+          <div className="flex flex-col gap-2 mb-6">
+            <AdminAction
+              href="/admin/users"
+              label="User Management"
+              description="Add, edit, or remove users"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-4a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6 3 3 0 000 6zm-12 0a3 3 0 100-6 3 3 0 000 6z" />
+                </svg>
+              }
+            />
+            <AdminAction
+              href="/admin/panels"
+              label="Panel Management"
+              description="Coming soon"
+              disabled
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              }
+            />
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -124,7 +188,7 @@ export default async function DashboardPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["Panel ID", "Assembly", "Dimensions", "Location", "Elevation", "Status"].map((h) => (
+                    {["Panel ID", "Assembly", "Floor", "Direction", "Drawing", "Status"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
@@ -149,13 +213,13 @@ export default async function DashboardPage() {
                         <AssemblyBadge type={panel.assemblyType} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                        {panel.dimensions ?? "—"}
+                        {panel.floor}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.location ?? "—"}
+                        {panel.direction}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.elevation ?? "—"}
+                        {panel.drawingSheet ?? "—"}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={panel.status} />
