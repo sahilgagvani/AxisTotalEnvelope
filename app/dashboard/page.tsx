@@ -171,9 +171,9 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <AssemblyBadge type={panel.assemblyType} />
-                      {panel.location && (
-                        <span className="text-xs text-gray-500">{panel.location}</span>
-                      )}
+                      <span className="text-xs text-gray-500">
+                        Floor {panel.floor} · {panel.direction} · #{panel.panelNumber}
+                      </span>
                     </div>
                   </div>
                   <div className="shrink-0 pt-0.5">
