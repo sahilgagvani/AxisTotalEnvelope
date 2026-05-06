@@ -357,8 +357,11 @@ export default function ChecklistSection({
             ) : !hideCta ? (
               <Link
                 href={`/panels/${panelId}/inspect`}
-                className="inline-block w-full sm:w-auto text-center px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gray-900 text-white text-sm font-semibold shadow-md shadow-gray-900/20 hover:bg-gray-700 active:scale-95 transition-all"
               >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
                 {recordCount === 0 ? "Start Inspection" : "Continue Inspection"}
               </Link>
             ) : null}
@@ -420,8 +423,8 @@ export default function ChecklistSection({
               {/* Result buttons */}
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-3">Result</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {(["PASS", "FAIL", "NA"] as const).map((r) => {
+                <div className="grid grid-cols-2 gap-3">
+                  {(["PASS", "FAIL"] as const).map((r) => {
                     const isSelected = editResult === r
                     return (
                       <button

@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   ADMIN
   QC_INSPECTOR
+  ENGINEER
 }
 
 enum PanelStatus {
@@ -30,45 +31,40 @@ enum InspectionResult {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  username            String               @unique
-  name                String?
-  pin                 String?
-  role                Role                 @default(QC_INSPECTOR)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  inspectionRecords   InspectionRecord[]
-  photos              Photo[]
-  auditLogs           AuditLog[]
-  projectAssignments  ProjectAssignment[]
-}
-
-model Project {
-  id          String              @id @default(cuid())
-  name        String              @unique
-  description String?
-  clientName  String?
-  address     String?
-  panels      Panel[]
-  assignments ProjectAssignment[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id                String             @id @default(cuid())
+  username          String             @unique
+  name              String?
+  pin               String?
+  role              Role               @default(QC_INSPECTOR)
+  quickLogin        Boolean            @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  inspectionRecords InspectionRecord[]
+  photos            Photo[]
+  auditLogs         AuditLog[]
 }
 
 model Panel {
   id                String             @id @default(cuid())
-  panelIdentifier   String
-  projectId         String
-  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  panelIdentifier   String             @unique
   qrCodeUrl         String?
   status            PanelStatus        @default(NOT_STARTED)
-  dimensions        String?
-  location          String?
-  elevation         String?
-  assemblyType      AssemblyType?
+  floor             Int
+  direction         String
+  panelNumber       Int
+  heightMm          Int
+  widthMm           Int
+  diagonalMm        Int?
+  topOfBottomM      Float
+  topOfTopM         Float
+  openingCount      Int                @default(0)
+  openingCallouts   String?
+  assemblyType      AssemblyType
   isShearWall       Boolean            @default(false)
-  hasWindow         Boolean            @default(false)
-  drawingUrl        String?
+  finishes          String?
+  drawingSheet      String?
+  notes             String?
   inspectionRecords InspectionRecord[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -128,13 +124,3 @@ model AuditLog {
   timestamp          DateTime         @default(now())
 }
 
-model ProjectAssignment {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  assignedAt DateTime @default(now())
-
-  @@unique([userId, projectId])
-}

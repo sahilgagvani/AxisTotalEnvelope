@@ -61,20 +61,10 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Access control ────────────────────────────────────────────────────────
+  // ── Panel existence check ─────────────────────────────────────────────────
   const panel = await prisma.panel.findUnique({ where: { id: panelId } })
   if (!panel) {
     return NextResponse.json({ error: "Panel not found" }, { status: 404 })
-  }
-
-  const assignment = await prisma.projectAssignment.findUnique({
-    where: { userId_projectId: { userId, projectId: panel.projectId } },
-  })
-  if (!assignment) {
-    return NextResponse.json(
-      { error: "You are not assigned to this project" },
-      { status: 403 }
-    )
   }
 
   // ── Duplicate check ───────────────────────────────────────────────────────

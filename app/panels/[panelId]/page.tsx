@@ -71,14 +71,12 @@ export default async function PanelDetailPage({
 }) {
   const { panelId } = await params
   const session = await auth()
-  const userId  = session?.user?.id
   const role    = session?.user?.role
   const isInspector = role === "QC_INSPECTOR"
 
   const panel = await prisma.panel.findUnique({
     where: { id: panelId },
     include: {
-      project: true,
       inspectionRecords: {
         include: {
           step:      true,
@@ -94,27 +92,6 @@ export default async function PanelDetailPage({
   })
 
   if (!panel) notFound()
-
-  if (role !== "ADMIN") {
-    const assignment = await prisma.projectAssignment.findUnique({
-      where: {
-        userId_projectId: { userId: userId!, projectId: panel.projectId },
-      },
-    })
-    if (!assignment) {
-      return (
-        <main className="flex-1">
-          <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Not authorized</h1>
-            <p className="text-gray-500 mb-6">You are not assigned to this project.</p>
-            <Link href="/dashboard" className="text-blue-600 hover:underline text-sm">
-              ← Back to dashboard
-            </Link>
-          </div>
-        </main>
-      )
-    }
-  }
 
   const steps = await prisma.inspectionStep.findMany({
     orderBy: { stepOrder: "asc" },
@@ -154,7 +131,7 @@ export default async function PanelDetailPage({
 
   return (
     <>
-      <main className={`flex-1 ${showStickyInspect ? "pb-24" : ""}`}>
+      <main className={`flex-1 ${showStickyInspect ? "pb-28" : ""}`}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
           {/* ── Panel Header ───────────────────────────────────────────────── */}
@@ -162,14 +139,7 @@ export default async function PanelDetailPage({
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-4 flex-wrap min-w-0">
               <Link href="/dashboard" className="hover:text-gray-700 shrink-0">
-                Projects
-              </Link>
-              <span className="shrink-0">/</span>
-              <Link
-                href={`/projects/${panel.projectId}`}
-                className="hover:text-gray-700 truncate max-w-[140px] sm:max-w-xs"
-              >
-                {panel.project.name}
+                Panels
               </Link>
               <span className="shrink-0">/</span>
               <span className="text-gray-900 font-medium shrink-0">
@@ -189,11 +159,16 @@ export default async function PanelDetailPage({
             {/* Metadata grid — 2-col on mobile, 3-col on sm+ */}
             <dl className="bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
               {[
-                { label: "Dimensions",     value: panel.dimensions ?? "—" },
-                { label: "Location",       value: panel.location   ?? "—" },
-                { label: "Elevation",      value: panel.elevation  ?? "—" },
+                { label: "Floor",          value: String(panel.floor) },
+                { label: "Direction",      value: panel.direction },
+                { label: "Height (mm)",    value: String(panel.heightMm) },
+                { label: "Width (mm)",     value: String(panel.widthMm) },
+                { label: "Diagonal (mm)",  value: panel.diagonalMm != null ? String(panel.diagonalMm) : "—" },
+                { label: "Drawing Sheet",  value: panel.drawingSheet ?? "—" },
                 { label: "Shear Wall",     value: panel.isShearWall ? "Yes" : "No" },
-                { label: "Window",         value: panel.hasWindow   ? "Yes" : "No" },
+                { label: "Openings",       value: String(panel.openingCount) },
+                { label: "Opening Refs",   value: panel.openingCallouts ?? "—" },
+                { label: "Finishes",       value: panel.finishes ?? "—" },
                 {
                   label: "Assembly System",
                   value: panel.assemblyType
@@ -281,13 +256,16 @@ export default async function PanelDetailPage({
         </div>
       </main>
 
-      {/* Sticky bottom inspection CTA — inspectors with incomplete steps */}
+      {/* Floating inspection CTA — inspectors with incomplete steps */}
       {showStickyInspect && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 px-4 py-3 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
           <Link
             href={`/panels/${panelId}/inspect`}
-            className="block w-full text-center py-4 rounded-xl bg-gray-900 text-white text-base font-semibold hover:bg-gray-700 active:bg-gray-800 transition-colors"
+            className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gray-900 text-white text-sm font-semibold shadow-xl shadow-gray-900/30 hover:bg-gray-700 active:scale-95 transition-all whitespace-nowrap"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
             {recordCount === 0 ? "Start Inspection" : "Continue Inspection"}
           </Link>
         </div>

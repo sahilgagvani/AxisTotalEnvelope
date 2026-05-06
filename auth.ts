@@ -26,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { username: credentials.username as string },
         });
 
-        if (!user || !user.pin) return null;
+        if (!user || !user.pin || user.deletedAt) return null;
 
         const pinMatch = await bcrypt.compare(pin, user.pin);
 

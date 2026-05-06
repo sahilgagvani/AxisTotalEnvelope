@@ -48,7 +48,7 @@ export default function NavBar() {
           )}
           {role && (
             <span className="hidden sm:inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 whitespace-nowrap">
-              {role === "QC_INSPECTOR" ? "Inspector" : "Admin"}
+              {role === "QC_INSPECTOR" ? "Inspector" : role === "ENGINEER" ? "Engineer" : "Admin"}
             </span>
           )}
           <button
