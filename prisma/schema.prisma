@@ -64,6 +64,7 @@ model Panel {
   isShearWall       Boolean            @default(false)
   finishes          String?
   drawingSheet      String?
+  drawingUrl        String?
   notes             String?
   inspectionRecords InspectionRecord[]
   createdAt         DateTime           @default(now())
