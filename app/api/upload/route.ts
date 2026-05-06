@@ -27,8 +27,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "File exceeds the 10 MB limit" }, { status: 400 })
   }
 
-  if (!file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "Only image files are accepted" }, { status: 400 })
+  if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+    return NextResponse.json({ error: "Only image or PDF files are accepted" }, { status: 400 })
   }
 
   const originalExt = file.name.includes(".")
