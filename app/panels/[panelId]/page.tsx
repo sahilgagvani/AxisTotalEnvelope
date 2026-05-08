@@ -5,7 +5,6 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import ChecklistSection from "@/components/ChecklistSection"
 import ActivityLog from "@/components/ActivityLog"
-import DrawingUpload from "@/components/DrawingUpload"
 import { PanelStatus, AssemblyType } from "@prisma/client"
 
 export async function generateMetadata({
@@ -206,9 +205,6 @@ export default async function PanelDetailPage({
               </a>
             ) : (
               <p className="text-sm text-gray-400">No shop drawing uploaded yet.</p>
-            )}
-            {role === "ADMIN" && (
-              <DrawingUpload panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
             )}
           </section>
 
