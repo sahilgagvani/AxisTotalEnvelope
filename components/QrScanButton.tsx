@@ -1,17 +1,66 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import jsQR from "jsqr"
 
 export default function QrScanButton() {
-  const [open, setOpen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const [open, setOpen]       = useState(false)
+  const [error, setError]     = useState<string | null>(null)
+  const [scanned, setScanned] = useState(false)
+  const videoRef  = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const rafRef    = useRef<number | null>(null)
+  const router    = useRouter()
 
-  async function startCamera() {
+  const stopCamera = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+  }, [])
+
+  function close() {
+    stopCamera()
+    setOpen(false)
     setError(null)
-    setOpen(true)
+    setScanned(false)
   }
+
+  // Scan loop — reads frames and checks for a QR code
+  const scanFrame = useCallback(() => {
+    const video  = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      rafRef.current = requestAnimationFrame(scanFrame)
+      return
+    }
+
+    canvas.width  = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    })
+
+    if (code?.data) {
+      // The QR encodes a panel ID (cuid). Validate it looks like one.
+      const panelId = code.data.trim()
+      if (panelId.length > 0) {
+        setScanned(true)
+        stopCamera()
+        router.push(`/panels/${panelId}`)
+        return
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(scanFrame)
+  }, [router, stopCamera])
 
   useEffect(() => {
     if (!open) return
@@ -28,6 +77,9 @@ export default function QrScanButton() {
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
+          videoRef.current.onloadedmetadata = () => {
+            rafRef.current = requestAnimationFrame(scanFrame)
+          }
         }
       })
       .catch(() => {
@@ -36,22 +88,14 @@ export default function QrScanButton() {
 
     return () => {
       active = false
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
+      stopCamera()
     }
-  }, [open])
-
-  function close() {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-    setOpen(false)
-    setError(null)
-  }
+  }, [open, scanFrame, stopCamera])
 
   return (
     <>
       <button
-        onClick={startCamera}
+        onClick={() => { setOpen(true); setError(null); setScanned(false) }}
         className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
       >
         <svg
@@ -93,6 +137,13 @@ export default function QrScanButton() {
                   </svg>
                   <p className="text-gray-400 text-sm">{error}</p>
                 </div>
+              ) : scanned ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 px-6 text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-gray-400 text-sm">QR code detected — navigating…</p>
+                </div>
               ) : (
                 <>
                   <video
@@ -102,6 +153,8 @@ export default function QrScanButton() {
                     muted
                     className="w-full h-full object-cover"
                   />
+                  {/* Hidden canvas used for frame analysis */}
+                  <canvas ref={canvasRef} className="hidden" />
                   {/* Viewfinder overlay */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-48 h-48 relative">
