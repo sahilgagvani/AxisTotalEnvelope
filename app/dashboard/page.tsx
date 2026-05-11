@@ -83,6 +83,7 @@ export default async function DashboardPage() {
   const name    = session?.user?.name
 
   const panels = await prisma.panel.findMany({
+    where: { archivedAt: null },
     orderBy: [{ floor: "asc" }, { panelIdentifier: "asc" }],
   })
 
@@ -126,8 +127,7 @@ export default async function DashboardPage() {
             <AdminAction
               href="/admin/panels"
               label="Panel Management"
-              description="Coming soon"
-              disabled
+              description="Add, edit, or archive panels"
               icon={
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
