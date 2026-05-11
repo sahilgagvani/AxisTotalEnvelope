@@ -61,10 +61,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Panel existence check ─────────────────────────────────────────────────
+  // ── Panel existence + archive check ──────────────────────────────────────
   const panel = await prisma.panel.findUnique({ where: { id: panelId } })
   if (!panel) {
     return NextResponse.json({ error: "Panel not found" }, { status: 404 })
+  }
+  if (panel.archivedAt) {
+    return NextResponse.json({ error: "Panel is archived" }, { status: 403 })
   }
 
   // ── Duplicate check ───────────────────────────────────────────────────────

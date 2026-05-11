@@ -57,6 +57,11 @@ export async function PUT(
     return NextResponse.json({ error: "Inspection record not found" }, { status: 404 })
   }
 
+  // ── Archive check ─────────────────────────────────────────────────────────
+  if (existing.panel.archivedAt) {
+    return NextResponse.json({ error: "Panel is archived" }, { status: 403 })
+  }
+
   // ── Capture previous state ────────────────────────────────────────────────
   const previousResult = existing.result as string
   const previousNotes  = existing.notes

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import ChecklistSection from "@/components/ChecklistSection"
 import ActivityLog from "@/components/ActivityLog"
+import QrCodeDisplay from "@/components/QrCodeDisplay"
 import { PanelStatus, AssemblyType } from "@prisma/client"
 
 export async function generateMetadata({
@@ -227,28 +228,13 @@ export default async function PanelDetailPage({
           {/* ── Activity Log ─────────────────────────────────────────────── */}
           <ActivityLog logs={serializedLogs} />
 
-          {/* ── QR Code Placeholder ──────────────────────────────────────── */}
+          {/* ── QR Code ──────────────────────────────────────────────────── */}
           <section>
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
               QR Code
             </h2>
-            <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4">
-              <svg className="w-14 h-14 text-gray-200 shrink-0" viewBox="0 0 100 100" fill="currentColor">
-                <rect x="10" y="10" width="35" height="35" rx="4" />
-                <rect x="55" y="10" width="35" height="35" rx="4" />
-                <rect x="10" y="55" width="35" height="35" rx="4" />
-                <rect x="18" y="18" width="19" height="19" fill="white" />
-                <rect x="63" y="18" width="19" height="19" fill="white" />
-                <rect x="18" y="63" width="19" height="19" fill="white" />
-                <rect x="24" y="24" width="7"  height="7"  />
-                <rect x="69" y="24" width="7"  height="7"  />
-                <rect x="24" y="69" width="7"  height="7"  />
-                <rect x="55" y="55" width="12" height="12" rx="2" />
-                <rect x="72" y="55" width="13" height="12" rx="2" />
-                <rect x="55" y="72" width="13" height="13" rx="2" />
-                <rect x="72" y="72" width="13" height="13" rx="2" />
-              </svg>
-              <p className="text-sm text-gray-400">QR code generation available in Milestone 2</p>
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <QrCodeDisplay panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
             </div>
           </section>
 
