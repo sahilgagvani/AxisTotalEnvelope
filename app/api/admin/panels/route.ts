@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     isShearWall,
     finishes,
     drawingSheet,
+    drawingUrl,
     notes,
   } = body as {
     panelIdentifier: string
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
     isShearWall: boolean
     finishes?: string | null
     drawingSheet?: string | null
+    drawingUrl?: string | null
     notes?: string | null
   }
 
@@ -124,6 +126,7 @@ export async function POST(req: Request) {
       isShearWall: isShearWall ?? false,
       finishes: finishes ?? null,
       drawingSheet: drawingSheet ?? null,
+      drawingUrl: drawingUrl ?? null,
       notes: notes ?? null,
     },
   })

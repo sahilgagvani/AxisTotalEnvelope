@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import type { AssemblyType, PanelStatus } from "@prisma/client"
 
@@ -21,6 +21,7 @@ type Panel = {
   isShearWall: boolean
   finishes: string | null
   drawingSheet: string | null
+  drawingUrl: string | null
   notes: string | null
   status: PanelStatus
   archivedAt: string | null
@@ -81,8 +82,29 @@ function PanelFormModal({
   )
   const [drawingSheet, setDrawingSheet] = useState(panel?.drawingSheet ?? "")
   const [notes, setNotes] = useState(panel?.notes ?? "")
+  const [drawingUrl, setDrawingUrl] = useState(panel?.drawingUrl ?? "")
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  async function uploadDrawing(file: File) {
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Upload failed")
+      setDrawingUrl(data.url)
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : "Upload failed")
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function save() {
     if (!panelIdentifier.trim()) return setError("Panel identifier is required.")
@@ -113,6 +135,7 @@ function PanelFormModal({
       isShearWall,
       finishes: finishesArr.filter(Boolean).join(", ") || null,
       drawingSheet: drawingSheet.trim() || null,
+      drawingUrl: drawingUrl || null,
       notes: notes.trim() || null,
     }
 
@@ -333,11 +356,62 @@ function PanelFormModal({
               />
             </Field>
 
+            {/* Shop Drawing upload */}
+            <Field label="Shop Drawing">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) uploadDrawing(file)
+                  e.target.value = ""
+                }}
+              />
+              {drawingUrl ? (
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+                  <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <a
+                    href={drawingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 text-sm text-gray-700 truncate hover:text-blue-600"
+                  >
+                    {drawingUrl.split("/").pop()}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="text-xs text-gray-400 hover:text-gray-600 shrink-0 disabled:opacity-40"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-3.5 py-3 text-sm text-gray-400 hover:border-blue-400 hover:text-blue-500 disabled:opacity-40 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {uploading ? "Uploading…" : "Upload shop drawing"}
+                </button>
+              )}
+              {uploadError && <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>}
+            </Field>
+
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <button
               onClick={save}
-              disabled={saving}
+              disabled={saving || uploading}
               className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition-colors min-h-[48px]"
             >
               {saving ? "Saving…" : mode === "create" ? "Add Panel" : "Save Changes"}
