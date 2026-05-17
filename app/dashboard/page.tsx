@@ -3,7 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import QrScanButton from "@/components/QrScanButton"
-import { PanelStatus, AssemblyType } from "@prisma/client"
+import PanelList from "./PanelList"
 
 function AdminAction({
   href,
@@ -46,36 +46,6 @@ export const metadata: Metadata = {
   title: "Panels — AXIS Total Envelope",
 }
 
-function StatusBadge({ status }: { status: PanelStatus }) {
-  const styles: Record<PanelStatus, string> = {
-    NOT_STARTED: "bg-gray-100 text-gray-600",
-    IN_PROGRESS:  "bg-blue-50 text-blue-700",
-    COMPLETED:    "bg-green-50 text-green-700",
-  }
-  const labels: Record<PanelStatus, string> = {
-    NOT_STARTED: "Not Started",
-    IN_PROGRESS:  "In Progress",
-    COMPLETED:    "Completed",
-  }
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}>
-      {labels[status]}
-    </span>
-  )
-}
-
-function AssemblyBadge({ type }: { type: AssemblyType | null }) {
-  if (!type) return <span className="text-gray-400 text-xs">—</span>
-  const styles: Record<AssemblyType, string> = {
-    EPS: "bg-amber-50 text-amber-700",
-    FRR: "bg-purple-50 text-purple-700",
-  }
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[type]}`}>
-      {type}
-    </span>
-  )
-}
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -152,86 +122,7 @@ export default async function DashboardPage() {
           ))}
         </div>
 
-        {panels.length === 0 ? (
-          <p className="text-gray-500 text-sm">No panels yet.</p>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-
-            {/* Mobile card list (below md) */}
-            <div className="md:hidden divide-y divide-gray-100">
-              {panels.map((panel) => (
-                <Link
-                  key={panel.id}
-                  href={`/panels/${panel.id}`}
-                  className="flex items-start justify-between gap-3 px-4 py-4 hover:bg-gray-50 active:bg-gray-100 min-h-[64px]"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-sm mb-1.5">
-                      {panel.panelIdentifier}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <AssemblyBadge type={panel.assemblyType} />
-                      <span className="text-xs text-gray-500">
-                        Floor {panel.floor} · {panel.direction} · #{panel.panelNumber}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="shrink-0 pt-0.5">
-                    <StatusBadge status={panel.status} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Desktop table (md+) */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {["Panel ID", "Assembly", "Floor", "Direction", "Drawing", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {panels.map((panel) => (
-                    <tr key={panel.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/panels/${panel.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600"
-                        >
-                          {panel.panelIdentifier}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        <AssemblyBadge type={panel.assemblyType} />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                        {panel.floor}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.direction}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {panel.drawingSheet ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={panel.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        )}
+        <PanelList panels={panels} />
 
 
       </div>
