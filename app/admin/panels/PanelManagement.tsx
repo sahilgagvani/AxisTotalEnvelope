@@ -591,7 +591,12 @@ export default function PanelManagement() {
   useEffect(() => {
     fetch("/api/admin/panels")
       .then((r) => r.json())
-      .then((data) => { setPanels(data); setLoading(false) })
+      .then((data: Panel[]) => {
+        setPanels(data)
+        const keys = new Set(data.map((p) => `${p.floor}-${p.direction}`))
+        setCollapsedGroups(keys)
+        setLoading(false)
+      })
   }, [])
 
   function openCreate() { setActivePanel(null); setModalMode("create") }
@@ -682,6 +687,46 @@ export default function PanelManagement() {
             Add Panel
           </button>
         </div>
+
+        {/* Expand / Collapse all */}
+        {!loading && groups.length > 0 && (() => {
+          const allKeys = groups.map((g) => g.key)
+          const allExpanded = collapsedGroups.size === 0
+          const allCollapsed = collapsedGroups.size === allKeys.length
+          return (
+            <div className="flex items-center justify-end gap-1 mb-2">
+              <button
+                onClick={() => setCollapsedGroups(new Set())}
+                disabled={allExpanded}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+                  allExpanded
+                    ? "text-gray-300 cursor-default"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+                Expand all
+              </button>
+              <div className="w-px h-4 bg-gray-200" />
+              <button
+                onClick={() => setCollapsedGroups(new Set(allKeys))}
+                disabled={allCollapsed}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+                  allCollapsed
+                    ? "text-gray-300 cursor-default"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                Collapse all
+              </button>
+            </div>
+          )
+        })()}
 
         {/* Panel list */}
         {loading ? (
