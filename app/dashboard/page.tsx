@@ -104,6 +104,16 @@ export default async function DashboardPage() {
                 </svg>
               }
             />
+            <AdminAction
+              href="/admin/qr"
+              label="QR Management"
+              description="Print QR codes for panels"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9V5a2 2 0 012-2h4M3 15v4a2 2 0 002 2h4m10-14h4a2 2 0 012 2v4m0 6v4a2 2 0 01-2 2h-4M9 9h.01M15 9h.01M9 15h.01M15 15h.01" />
+                </svg>
+              }
+            />
           </div>
         )}
 
