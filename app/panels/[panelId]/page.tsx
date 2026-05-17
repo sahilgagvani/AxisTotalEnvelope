@@ -114,7 +114,7 @@ export default async function PanelDetailPage({
 
   const allAuditLogs = panel.inspectionRecords
     .flatMap((r) =>
-      r.auditLogs.map((log) => ({ ...log, stepName: r.step.name }))
+      r.auditLogs.map((log) => ({ ...log, stepName: r.step.name, stepOrder: r.step.stepOrder }))
     )
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
@@ -123,6 +123,7 @@ export default async function PanelDetailPage({
     action:         log.action,
     userName:       log.user.name ?? "Unknown",
     stepName:       log.stepName,
+    stepOrder:      log.stepOrder,
     timestamp:      log.timestamp.toISOString(),
     previousResult: log.previousResult,
     newResult:      log.newResult,

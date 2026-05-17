@@ -92,7 +92,7 @@ function formatDate(iso: string): string {
 function PencilIcon() {
   return (
     <svg
-      className="w-3.5 h-3.5"
+      className="w-4.5 h-4.5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -127,6 +127,53 @@ function SpinnerIcon() {
   )
 }
 
+// ── Progress bar ──────────────────────────────────────────────────────────────
+
+function ProgressBar({
+  records,
+  totalSteps,
+}: {
+  records: RecordData[]
+  totalSteps: number
+}) {
+  const passCount    = records.filter((r) => r.result === "PASS").length
+  const failCount    = records.filter((r) => r.result === "FAIL").length
+  const naCount      = records.filter((r) => r.result === "NA").length
+  const doneCount    = records.length
+  const passPercent  = totalSteps > 0 ? (passCount / totalSteps) * 100 : 0
+  const failPercent  = totalSteps > 0 ? (failCount / totalSteps) * 100 : 0
+  const naPercent    = totalSteps > 0 ? (naCount   / totalSteps) * 100 : 0
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+        <span>
+          <span className="font-medium text-gray-900">{doneCount}</span>
+          {" / "}
+          <span>{totalSteps} complete</span>
+        </span>
+        {failCount > 0 && (
+          <span className="text-red-600 font-medium">{failCount} Fail</span>
+        )}
+      </div>
+      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
+        <div
+          className="h-full bg-green-500 transition-all"
+          style={{ width: `${passPercent}%` }}
+        />
+        <div
+          className="h-full bg-red-400 transition-all"
+          style={{ width: `${failPercent}%` }}
+        />
+        <div
+          className="h-full bg-gray-300 transition-all"
+          style={{ width: `${naPercent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ChecklistSection({
@@ -138,7 +185,7 @@ export default function ChecklistSection({
   totalSteps,
   hideCta = false,
 }: ChecklistSectionProps) {
-  const router     = useRouter()
+  const router      = useRouter()
   const isInspector = role === "QC_INSPECTOR"
 
   // ── Edit modal state ────────────────────────────────────────────────────────
@@ -148,6 +195,9 @@ export default function ChecklistSection({
   const [newPhotos,     setNewPhotos]     = useState<PhotoEntry[]>([])
   const [isSaving,      setIsSaving]      = useState(false)
   const [saveError,     setSaveError]     = useState<string | null>(null)
+
+  // ── Lightbox state ──────────────────────────────────────────────────────────
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const fileInputRef   = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -275,6 +325,8 @@ export default function ChecklistSection({
           QA/QC Checklist
         </h2>
 
+        <ProgressBar records={records} totalSteps={totalSteps} />
+
         <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
           {steps.map((step) => {
             const record = recordByStepId.get(step.id)
@@ -307,16 +359,28 @@ export default function ChecklistSection({
                           <span>{record.inspectorName}</span>
                           <span>·</span>
                           <span>{formatDate(record.completedAt)}</span>
-                          {record.photos.length > 0 && (
-                            <>
-                              <span>·</span>
-                              <span>
-                                {record.photos.length}{" "}
-                                {record.photos.length === 1 ? "photo" : "photos"}
-                              </span>
-                            </>
-                          )}
                         </div>
+                        {/* Inline photo thumbnails */}
+                        {record.photos.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {record.photos.map((photo) => (
+                              <button
+                                key={photo.id}
+                                type="button"
+                                onClick={() => setLightboxUrl(photo.url)}
+                                className="w-10 h-10 rounded-md overflow-hidden border border-gray-200 shrink-0 hover:ring-2 hover:ring-gray-400 transition-all"
+                                aria-label="View photo"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={photo.url}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -331,14 +395,16 @@ export default function ChecklistSection({
                             type="button"
                             onClick={() => openEdit(record)}
                             aria-label={`Edit step ${step.stepOrder}`}
-                            className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 rounded"
+                            className="text-gray-500 hover:text-gray-800 transition-colors p-1.5 rounded"
                           >
                             <PencilIcon />
                           </button>
                         )}
                       </>
                     ) : (
-                      <span className="text-xs text-gray-300">Pending</span>
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border border-gray-200 text-gray-400">
+                        Pending
+                      </span>
                     )}
                   </div>
                 </div>
@@ -368,6 +434,32 @@ export default function ChecklistSection({
           </div>
         )}
       </section>
+
+      {/* ── Lightbox ───────────────────────────────────────────────────────────── */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Close photo"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-full rounded-lg object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* ── Edit Modal ─────────────────────────────────────────────────────────── */}
       {editingRecord && editingStep && (
@@ -482,9 +574,12 @@ export default function ChecklistSection({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {editingRecord.photos.map((photo) => (
-                      <div
+                      <button
                         key={photo.id}
-                        className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shrink-0"
+                        type="button"
+                        onClick={() => setLightboxUrl(photo.url)}
+                        className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shrink-0 hover:ring-2 hover:ring-gray-400 transition-all"
+                        aria-label="View photo"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -492,7 +587,7 @@ export default function ChecklistSection({
                           alt=""
                           className="w-full h-full object-cover"
                         />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
