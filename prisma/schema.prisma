@@ -36,6 +36,7 @@ model User {
   name              String?
   pin               String?
   role              Role               @default(QC_INSPECTOR)
+  email             String?            @unique
   quickLogin        Boolean            @default(false)
   deletedAt         DateTime?
   createdAt         DateTime           @default(now())

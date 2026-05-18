@@ -17,7 +17,7 @@ export async function PATCH(
 
   const { id } = await params
   const body = await req.json()
-  const { name, role, pin, quickLogin, reactivate } = body
+  const { name, role, pin, quickLogin, reactivate, email } = body
 
   const user = await prisma.user.findUnique({ where: { id } })
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -30,12 +30,23 @@ export async function PATCH(
     return NextResponse.json({ error: "PIN must be exactly 4 digits" }, { status: 400 })
   }
 
+  const effectiveRole = role ?? user.role
+  if (effectiveRole === "ENGINEER" && email !== undefined) {
+    if (!email) return NextResponse.json({ error: "Email is required for Engineers" }, { status: 400 })
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
+    }
+    const emailTaken = await prisma.user.findFirst({ where: { email, NOT: { id } } })
+    if (emailTaken) return NextResponse.json({ error: "Email already in use" }, { status: 409 })
+  }
+
   const data: Record<string, unknown> = {}
   if (name !== undefined) data.name = name
   if (role !== undefined) data.role = role
   if (quickLogin !== undefined) data.quickLogin = quickLogin
   if (reactivate) data.deletedAt = null
   if (pin !== undefined) data.pin = await bcrypt.hash(pin, 10)
+  if (email !== undefined) data.email = email || null
 
   const updated = await prisma.user.update({
     where: { id },
@@ -45,6 +56,7 @@ export async function PATCH(
       username: true,
       name: true,
       role: true,
+      email: true,
       quickLogin: true,
       deletedAt: true,
       createdAt: true,
