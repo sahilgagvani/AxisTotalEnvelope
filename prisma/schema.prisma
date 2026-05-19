@@ -31,19 +31,21 @@ enum InspectionResult {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  username          String             @unique
-  name              String?
-  pin               String?
-  role              Role               @default(QC_INSPECTOR)
-  email             String?            @unique
-  quickLogin        Boolean            @default(false)
-  deletedAt         DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  inspectionRecords InspectionRecord[]
-  photos            Photo[]
-  auditLogs         AuditLog[]
+  id                    String             @id @default(cuid())
+  username              String             @unique
+  name                  String?
+  pin                   String?
+  role                  Role               @default(QC_INSPECTOR)
+  email                 String?            @unique
+  quickLogin            Boolean            @default(false)
+  deletedAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  inspectionRecords     InspectionRecord[]
+  photos                Photo[]
+  auditLogs             AuditLog[]
+  receivedNotifications Notification[]     @relation("ReceivedNotifications")
+  sentNotifications     Notification[]     @relation("SentNotifications")
 }
 
 model Panel {
@@ -69,6 +71,7 @@ model Panel {
   notes             String?
   archivedAt        DateTime?
   inspectionRecords InspectionRecord[]
+  notifications     Notification[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -125,5 +128,18 @@ model AuditLog {
   previousNotes      String?
   newNotes           String?
   timestamp          DateTime         @default(now())
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  recipientId String
+  recipient   User      @relation("ReceivedNotifications", fields: [recipientId], references: [id])
+  senderId    String
+  sender      User      @relation("SentNotifications", fields: [senderId], references: [id])
+  panelId     String
+  panel       Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  message     String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 }
 

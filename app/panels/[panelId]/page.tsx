@@ -6,6 +6,7 @@ import Link from "next/link"
 import ChecklistSection from "@/components/ChecklistSection"
 import ActivityLog from "@/components/ActivityLog"
 import QrCodeDisplay from "@/components/QrCodeDisplay"
+import NotifyButton from "@/components/NotifyButton"
 import { PanelStatus, AssemblyType } from "@prisma/client"
 
 export async function generateMetadata({
@@ -73,7 +74,8 @@ export default async function PanelDetailPage({
   const { panelId } = await params
   const session = await auth()
   const role    = session?.user?.role
-  const isInspector = role === "QC_INSPECTOR"
+  const isInspector       = role === "QC_INSPECTOR"
+  const isAdminOrInspector = role === "ADMIN" || role === "QC_INSPECTOR"
 
   const panel = await prisma.panel.findUnique({
     where: { id: panelId },
@@ -210,6 +212,9 @@ export default async function PanelDetailPage({
                 <p className="text-sm text-gray-400">No shop drawing uploaded yet.</p>
               )}
               <QrCodeDisplay panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
+              {isAdminOrInspector && (
+                <NotifyButton panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
+              )}
             </div>
           </section>
 
