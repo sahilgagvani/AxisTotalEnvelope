@@ -6,6 +6,7 @@ import Link from "next/link"
 import ChecklistSection from "@/components/ChecklistSection"
 import ActivityLog from "@/components/ActivityLog"
 import QrCodeDisplay from "@/components/QrCodeDisplay"
+import NotifyButton from "@/components/NotifyButton"
 import { PanelStatus, AssemblyType } from "@prisma/client"
 
 export async function generateMetadata({
@@ -73,7 +74,8 @@ export default async function PanelDetailPage({
   const { panelId } = await params
   const session = await auth()
   const role    = session?.user?.role
-  const isInspector = role === "QC_INSPECTOR"
+  const isInspector       = role === "QC_INSPECTOR"
+  const isAdminOrInspector = role === "ADMIN" || role === "QC_INSPECTOR"
 
   const panel = await prisma.panel.findUnique({
     where: { id: panelId },
@@ -188,26 +190,32 @@ export default async function PanelDetailPage({
             </dl>
           </section>
 
-          {/* ── Shop Drawing ─────────────────────────────────────────────── */}
+          {/* ── Shop Drawing + QR Code ───────────────────────────────────── */}
           <section>
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
               Shop Drawing
             </h2>
-            {panel.drawingUrl ? (
-              <a
-                href={panel.drawingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-                View Shop Drawing
-              </a>
-            ) : (
-              <p className="text-sm text-gray-400">No shop drawing uploaded yet.</p>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {panel.drawingUrl ? (
+                <a
+                  href={panel.drawingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  View Shop Drawing
+                </a>
+              ) : (
+                <p className="text-sm text-gray-400">No shop drawing uploaded yet.</p>
+              )}
+              <QrCodeDisplay panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
+              {isAdminOrInspector && (
+                <NotifyButton panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
+              )}
+            </div>
           </section>
 
           {/* ── QA/QC Checklist ──────────────────────────────────────────── */}
@@ -229,15 +237,6 @@ export default async function PanelDetailPage({
           {/* ── Activity Log ─────────────────────────────────────────────── */}
           <ActivityLog logs={serializedLogs} />
 
-          {/* ── QR Code ──────────────────────────────────────────────────── */}
-          <section>
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
-              QR Code
-            </h2>
-            <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <QrCodeDisplay panelId={panel.id} panelIdentifier={panel.panelIdentifier} />
-            </div>
-          </section>
 
         </div>
       </main>
