@@ -4,6 +4,7 @@ import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import NotificationInbox from "@/components/NotificationInbox"
 
 export default function NavBar() {
   const { data: session } = useSession()
@@ -51,6 +52,7 @@ export default function NavBar() {
               {role === "QC_INSPECTOR" ? "Inspector" : role === "ENGINEER" ? "Engineer" : "Admin"}
             </span>
           )}
+          <NotificationInbox />
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap py-1 px-2 -mr-2 min-h-[44px] flex items-center"

@@ -9,6 +9,7 @@ type User = {
   username: string
   name: string | null
   role: Role
+  email: string | null
   quickLogin: boolean
   deletedAt: string | null
   createdAt: string
@@ -81,6 +82,7 @@ function UserFormModal({
   const [name, setName] = useState(user?.name ?? "")
   const [username, setUsername] = useState(user?.username ?? "")
   const [role, setRole] = useState<string>(user?.role ?? "QC_INSPECTOR")
+  const [email, setEmail] = useState(user?.email ?? "")
   const [pin, setPin] = useState("")
   const [quickLogin, setQuickLogin] = useState(user?.quickLogin ?? false)
   const [error, setError] = useState<string | null>(null)
@@ -95,12 +97,16 @@ function UserFormModal({
       if (!username.trim()) return setError("Username is required.")
       if (!/^\d{4}$/.test(pin)) return setError("PIN must be exactly 4 digits.")
     }
+    if (role === "ENGINEER") {
+      if (!email.trim()) return setError("Email is required for Engineers.")
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Invalid email address.")
+    }
     setError(null)
     setSaving(true)
 
     const url = mode === "create" ? "/api/users" : `/api/users/${user!.id}`
     const method = mode === "create" ? "POST" : "PATCH"
-    const body: Record<string, unknown> = { name, role, quickLogin }
+    const body: Record<string, unknown> = { name, role, quickLogin, email: role === "ENGINEER" ? email : undefined }
     if (mode === "create") { body.username = username; body.pin = pin }
 
     const res = await fetch(url, {
@@ -153,6 +159,19 @@ function UserFormModal({
               <option value="ENGINEER">Engineer</option>
             </select>
           </Field>
+
+          {role === "ENGINEER" && (
+            <Field label="Email">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.trim())}
+                className={inputCls}
+                placeholder="e.g. engineer@example.com"
+                autoComplete="off"
+              />
+            </Field>
+          )}
 
           {mode === "create" && (
             <Field label="PIN">
@@ -381,7 +400,7 @@ function UserRow({
             </span>
           )}
         </div>
-        <span className="block text-xs text-gray-400 mt-0.5">@{user.username}</span>
+        <span className="block text-xs text-gray-400 mt-0.5">@{user.username}{user.email ? ` · ${user.email}` : ""}</span>
       </div>
 
       {/* Actions */}
